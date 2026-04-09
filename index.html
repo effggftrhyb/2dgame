@@ -193,6 +193,9 @@ async function preloadAssets() {
     loadPromises.push(loadImage('2level.jpeg').then(img => { if (img) bgImages[2] = img; }));
     loadPromises.push(loadImage('3level.png').then(img => { if (img) bgImages[3] = img; }));
     loadPromises.push(loadImage('4level.png').then(img => { if (img) bgImages[4] = img; }));
+    loadPromises.push(loadImage('5level.jpg').then(img => { if (img) bgImages[5] = img; }));
+    loadPromises.push(loadImage('6level.jpg').then(img => { if (img) bgImages[6] = img; }));
+    loadPromises.push(loadImage('7level.jpg').then(img => { if (img) bgImages[7] = img; }));
 
     await Promise.all(loadPromises);
 }
@@ -299,7 +302,7 @@ const levels = {
         exitX: 2420, exitY: 350, startX: 80, startY: 380
     },
     3: {
-        name: 'Забытое королевство', bg: 3, groundY: 420,
+        name: 'Зелёные поля', bg: 3, groundY: 420,
         groundTiles: [
             { x: 0, type: 'stone_left' }, { x: 40, type: 'stone_mid' }, { x: 80, type: 'stone_mid' },
             { x: 120, type: 'stone_mid' }, { x: 160, type: 'stone_mid' }, { x: 200, type: 'stone_mid' },
@@ -345,11 +348,11 @@ const levels = {
             { x: 2430, y: 300 },
         ],
         artifact: { x: 1400, y: 150, collected: false },
-        npc: { x: 2100, y: 348, name: 'Капитан Стражи', dialog: 'Королевская Печать утеряна в руинах замка. Найди её и верни мне!' },
+        npc: { x: 2100, y: 348, name: 'Фермер Иван', dialog: 'Мой плуг сломался в поле. Найди железный лом в сарае и принеси мне!' },
         exitX: 2520, exitY: 350, startX: 80, startY: 380
     },
     4: {
-        name: 'Вулканическая обитель', bg: 4, groundY: 420,
+        name: 'Город', bg: 4, groundY: 420,
         groundTiles: [
             { x: 0, type: 'lava_left' }, { x: 40, type: 'lava_mid' }, { x: 80, type: 'lava_mid' },
             { x: 120, type: 'lava_mid' }, { x: 160, type: 'lava_mid' }, { x: 200, type: 'lava_mid' },
@@ -396,10 +399,186 @@ const levels = {
             { x: 2330, y: 250 },
         ],
         artifact: { x: 1200, y: 150, collected: false },
-        npc: { x: 2000, y: 348, name: 'Огненный Маг', dialog: 'Сердце Вулкана скрыто в лавовых пещерах. Добудь его для меня!' },
+        npc: { x: 2000, y: 348, name: 'Старший Смотритель', dialog: 'В подвалах города потерялся важный ключ. Найди его и открой хранилище!' },
         exitX: 2500, exitY: 350, startX: 80, startY: 380
+    },
+    5: {
+        name: 'Заброшенный порт', bg: 5, groundY: 420,
+        groundTiles: [
+            { x: 0, type: 'stone_left' }, { x: 40, type: 'stone_mid' }, { x: 80, type: 'stone_mid' },
+            { x: 120, type: 'stone_mid' }, { x: 160, type: 'stone_mid' }, { x: 200, type: 'stone_mid' },
+            { x: 240, type: 'stone_mid' }, { x: 280, type: 'stone_mid' }, { x: 320, type: 'stone_mid' },
+            { x: 360, type: 'stone_mid' }, { x: 400, type: 'stone_mid' }, { x: 440, type: 'stone_right' },
+            { x: 480, type: 'stone_fill' },
+            { x: 520, type: 'stone_left' }, { x: 560, type: 'stone_mid' }, { x: 600, type: 'stone_mid' },
+            { x: 640, type: 'stone_mid' }, { x: 680, type: 'stone_mid' }, { x: 720, type: 'stone_mid' },
+            { x: 760, type: 'stone_mid' }, { x: 800, type: 'stone_mid' }, { x: 840, type: 'stone_right' },
+            { x: 880, type: 'stone_fill' },
+            { x: 920, type: 'stone_left' }, { x: 960, type: 'stone_mid' }, { x: 1000, type: 'stone_mid' },
+            { x: 1040, type: 'stone_mid' }, { x: 1080, type: 'stone_mid' }, { x: 1120, type: 'stone_right' },
+            { x: 1160, type: 'stone_fill' },
+            { x: 1200, type: 'stone_left' }, { x: 1240, type: 'stone_mid' }, { x: 1280, type: 'stone_mid' },
+            { x: 1320, type: 'stone_mid' }, { x: 1360, type: 'stone_mid' }, { x: 1400, type: 'stone_right' },
+            { x: 1440, type: 'stone_fill' },
+            { x: 1480, type: 'stone_left' }, { x: 1520, type: 'stone_mid' }, { x: 1560, type: 'stone_mid' },
+            { x: 1600, type: 'stone_mid' }, { x: 1640, type: 'stone_mid' }, { x: 1680, type: 'stone_mid' },
+            { x: 1720, type: 'stone_mid' }, { x: 1760, type: 'stone_right' }, { x: 1800, type: 'stone_fill' },
+            { x: 1840, type: 'stone_left' }, { x: 1880, type: 'stone_mid' }, { x: 1920, type: 'stone_mid' },
+            { x: 1960, type: 'stone_mid' }, { x: 2000, type: 'stone_mid' }, { x: 2040, type: 'stone_right' },
+            { x: 2080, type: 'stone_fill' },
+            { x: 2120, type: 'stone_left' }, { x: 2160, type: 'stone_mid' }, { x: 2200, type: 'stone_mid' },
+            { x: 2240, type: 'stone_mid' }, { x: 2280, type: 'stone_mid' }, { x: 2320, type: 'stone_right' },
+            { x: 2360, type: 'stone_fill' },
+        ],
+        platforms: [
+            { x: 150, y: 350, w: 100, h: 20 }, { x: 400, y: 300, w: 80, h: 20 },
+            { x: 600, y: 250, w: 100, h: 20 }, { x: 850, y: 320, w: 80, h: 20 },
+            { x: 1100, y: 280, w: 100, h: 20 }, { x: 1350, y: 350, w: 80, h: 20 },
+            { x: 1600, y: 300, w: 100, h: 20 }, { x: 1850, y: 250, w: 80, h: 20 },
+            { x: 2100, y: 320, w: 100, h: 20 }, { x: 2350, y: 280, w: 80, h: 20 },
+        ],
+        enemies: [
+            { x: 250, y: 388, type: 'ghost' }, { x: 550, y: 388, type: 'plant' },
+            { x: 900, y: 388, type: 'crab' }, { x: 1250, y: 388, type: 'ghost' },
+            { x: 1600, y: 388, type: 'plant' }, { x: 2000, y: 388, type: 'crab' },
+        ],
+        coins: [
+            { x: 180, y: 310 }, { x: 430, y: 260 }, { x: 630, y: 210 },
+            { x: 880, y: 280 }, { x: 1130, y: 240 }, { x: 1380, y: 310 },
+            { x: 1630, y: 260 }, { x: 1880, y: 210 }, { x: 2130, y: 280 },
+            { x: 2380, y: 240 },
+        ],
+        artifact: { x: 900, y: 150, collected: false },
+        npc: { x: 1800, y: 348, name: 'Старый Капитан', dialog: 'Мой компас пропал во время шторма! Найди его в трюме затонувшего корабля.' },
+        exitX: 2400, exitY: 350, startX: 80, startY: 380
+    },
+    6: {
+        name: 'Ледяная пещера', bg: 6, groundY: 420,
+        groundTiles: [
+            { x: 0, type: 'cave_left' }, { x: 40, type: 'cave_mid' }, { x: 80, type: 'cave_mid' },
+            { x: 120, type: 'cave_mid' }, { x: 160, type: 'cave_mid' }, { x: 200, type: 'cave_mid' },
+            { x: 240, type: 'cave_mid' }, { x: 280, type: 'cave_mid' }, { x: 320, type: 'cave_mid' },
+            { x: 360, type: 'cave_mid' }, { x: 400, type: 'cave_mid' }, { x: 440, type: 'cave_right' },
+            { x: 480, type: 'cave_fill' },
+            { x: 520, type: 'cave_left' }, { x: 560, type: 'cave_mid' }, { x: 600, type: 'cave_mid' },
+            { x: 640, type: 'cave_mid' }, { x: 680, type: 'cave_mid' }, { x: 720, type: 'cave_mid' },
+            { x: 760, type: 'cave_mid' }, { x: 800, type: 'cave_mid' }, { x: 840, type: 'cave_mid' },
+            { x: 880, type: 'cave_right' }, { x: 920, type: 'cave_fill' },
+            { x: 960, type: 'cave_left' }, { x: 1000, type: 'cave_mid' }, { x: 1040, type: 'cave_mid' },
+            { x: 1080, type: 'cave_mid' }, { x: 1120, type: 'cave_mid' }, { x: 1160, type: 'cave_mid' },
+            { x: 1200, type: 'cave_right' }, { x: 1240, type: 'cave_fill' },
+            { x: 1280, type: 'cave_left' }, { x: 1320, type: 'cave_mid' }, { x: 1360, type: 'cave_mid' },
+            { x: 1400, type: 'cave_mid' }, { x: 1440, type: 'cave_mid' }, { x: 1480, type: 'cave_mid' },
+            { x: 1520, type: 'cave_right' }, { x: 1560, type: 'cave_fill' },
+            { x: 1600, type: 'cave_left' }, { x: 1640, type: 'cave_mid' }, { x: 1680, type: 'cave_mid' },
+            { x: 1720, type: 'cave_mid' }, { x: 1760, type: 'cave_mid' }, { x: 1800, type: 'cave_mid' },
+            { x: 1840, type: 'cave_right' }, { x: 1880, type: 'cave_fill' },
+            { x: 1920, type: 'cave_left' }, { x: 1960, type: 'cave_mid' }, { x: 2000, type: 'cave_mid' },
+            { x: 2040, type: 'cave_mid' }, { x: 2080, type: 'cave_mid' }, { x: 2120, type: 'cave_mid' },
+            { x: 2160, type: 'cave_mid' }, { x: 2200, type: 'cave_mid' }, { x: 2240, type: 'cave_mid' },
+            { x: 2280, type: 'cave_mid' }, { x: 2320, type: 'cave_mid' }, { x: 2360, type: 'cave_right' },
+            { x: 2400, type: 'cave_fill' },
+        ],
+        platforms: [
+            { x: 150, y: 360, w: 80, h: 20 }, { x: 350, y: 320, w: 100, h: 20 },
+            { x: 550, y: 270, w: 80, h: 20 }, { x: 750, y: 330, w: 100, h: 20 },
+            { x: 950, y: 290, w: 80, h: 20 }, { x: 1150, y: 250, w: 100, h: 20 },
+            { x: 1400, y: 310, w: 80, h: 20 }, { x: 1600, y: 270, w: 100, h: 20 },
+            { x: 1850, y: 330, w: 80, h: 20 }, { x: 2050, y: 290, w: 100, h: 20 },
+            { x: 2300, y: 350, w: 80, h: 20 },
+        ],
+        enemies: [
+            { x: 200, y: 388, type: 'plant' }, { x: 500, y: 388, type: 'ghost' },
+            { x: 800, y: 388, type: 'crab' }, { x: 1200, y: 388, type: 'plant' },
+            { x: 1500, y: 388, type: 'ghost' }, { x: 1900, y: 388, type: 'crab' },
+            { x: 2200, y: 388, type: 'plant' },
+        ],
+        coins: [
+            { x: 180, y: 320 }, { x: 380, y: 280 }, { x: 580, y: 230 },
+            { x: 780, y: 290 }, { x: 980, y: 250 }, { x: 1180, y: 210 },
+            { x: 1430, y: 270 }, { x: 1630, y: 230 }, { x: 1880, y: 290 },
+            { x: 2080, y: 250 }, { x: 2330, y: 310 },
+        ],
+        artifact: { x: 1700, y: 170, collected: false },
+        npc: { x: 2100, y: 348, name: 'Ледяная Ведьма', dialog: 'Мой ледяной посох треснул в глубинах пещеры. Найди его осколки и принеси мне!' },
+        exitX: 2440, exitY: 350, startX: 80, startY: 380
+    },
+    7: {
+        name: 'Древнее святилище', bg: 7, groundY: 420,
+        groundTiles: generateGroundTiles(7000),
+        platforms: generatePlatforms(7000),
+        enemies: generateEnemies(7000),
+        coins: generateCoins(7000),
+        artifacts: [
+            { x: 400, y: 320, collected: false, requiredNpc: 0 },
+            { x: 900, y: 200, collected: false, requiredNpc: 1 },
+            { x: 1500, y: 350, collected: false, requiredNpc: 2 },
+            { x: 2100, y: 180, collected: false, requiredNpc: 3 },
+            { x: 2700, y: 320, collected: false, requiredNpc: 4 },
+            { x: 3300, y: 200, collected: false, requiredNpc: 5 },
+            { x: 3900, y: 350, collected: false, requiredNpc: 6 },
+            { x: 4500, y: 180, collected: false, requiredNpc: 7 },
+        ],
+        npcs: [
+            { x: 500, y: 348, name: 'Архивариус Элдор', dialog: 'Мои летописи раскиданы по святилищу. Принеси мне Свиток Знаний из восточной камеры!' },
+            { x: 1000, y: 348, name: 'Хранительница Тайн', dialog: 'Ключ от потерянной библиотеки... Найди его в подземном лабиринте.' },
+            { x: 1600, y: 348, name: 'Мастер Мечей', dialog: 'Мой боевой клинок сломался в бою с призраками. Найди руины храма и отыщи его осколок.' },
+            { x: 2200, y: 348, name: 'Алхимик Зельевар', dialog: 'Потерял свой котёл в пещерах подземья. Без него не могу создавать зелья! Найди его.' },
+            { x: 2800, y: 348, name: 'Повелитель Ветров', dialog: 'Мой посох бури пропал в урагане. Найди его на вершине башни.' },
+            { x: 3400, y: 348, name: 'Хранитель Огня', dialog: 'Вечный факел погас... Найди Искру Вечности в глубинах пламени.' },
+            { x: 4000, y: 348, name: 'Страж Времени', dialog: 'Мои песочные часы разбиты. Собери осколки из разных эпох святилища.' },
+            { x: 4600, y: 348, name: 'Владыка Теней', dialog: 'Амулет теней украден и разделён на части. Найди все фрагменты во тьме!' },
+        ],
+        exitX: 5200, exitY: 350, startX: 80, startY: 380
     }
 };
+
+function generateGroundTiles(maxX) {
+    const tiles = [];
+    for (let x = 0; x < maxX; x += 40) {
+        const isLeft = x % 280 === 0;
+        const isRight = (x + 40) % 280 === 0;
+        let type = 'stone_mid';
+        if (isLeft) type = 'stone_left';
+        else if (isRight) type = 'stone_right';
+        
+        tiles.push({ x, type });
+        if (isRight || (x > 0 && x % 280 === 160)) {
+            tiles.push({ x: x + 40, type: 'stone_fill' });
+        }
+    }
+    return tiles;
+}
+
+function generatePlatforms(maxX) {
+    const platforms = [];
+    for (let x = 200; x < maxX - 200; x += 350) {
+        platforms.push({ 
+            x, 
+            y: 280 + Math.random() * 100, 
+            w: 80 + Math.random() * 40, 
+            h: 20 
+        });
+    }
+    return platforms;
+}
+
+function generateEnemies(maxX) {
+    const enemies = [];
+    const types = ['crab', 'plant', 'ghost'];
+    for (let x = 300; x < maxX - 300; x += 400) {
+        enemies.push({ x, y: 388, type: types[Math.floor(Math.random() * 3)] });
+    }
+    return enemies;
+}
+
+function generateCoins(maxX) {
+    const coins = [];
+    for (let x = 250; x < maxX - 250; x += 300) {
+        coins.push({ x, y: 250 + Math.random() * 100 });
+    }
+    return coins;
+}
 
 // ==================== PLAYER ====================
 const player = {
@@ -417,6 +596,9 @@ let platforms = [];
 let artifact = null;
 let hasArtifact = false;
 let npc = null;
+let artifacts = [];
+let npcs = [];
+let collectedArtifacts = [];
 
 // ==================== LOAD LEVEL ====================
 function loadLevel(levelNum) {
@@ -455,6 +637,18 @@ function loadLevel(levelNum) {
     artifact = level.artifact ? { ...level.artifact, collected: false, animFrame: 0, width: 32, height: 32 } : null;
     hasArtifact = false;
     npc = level.npc ? { ...level.npc, width: 32, height: 40, hasQuest: true } : null;
+    
+    if (levelNum === 7 && level.artifacts) {
+        artifacts = level.artifacts.map(a => ({ ...a, animFrame: 0, width: 32, height: 32 }));
+        npcs = level.npcs.map(n => ({ ...n, width: 32, height: 40, hasQuest: true }));
+        collectedArtifacts = [];
+        keyEPressed = false;
+    } else {
+        artifacts = [];
+        npcs = [];
+        collectedArtifacts = [];
+    }
+    
     keyEPressed = false;
     cameraX = 0;
     updateUI();
@@ -527,8 +721,9 @@ function update() {
     // --- Exit check ---
     const distToExit = Math.hypot(player.x - currentLevel.exitX, player.y - currentLevel.exitY);
     if (distToExit < 50) {
-        if (npc && npc.hasQuest) {
-            showMessage('Сначала выполни задание NPC!');
+        const hasActiveQuest = (npc && npc.hasQuest) || npcs.some(n => n.hasQuest);
+        if (hasActiveQuest) {
+            showMessage('Сначала выполни задания всех NPC!');
         } else {
             gameState.score += 100;
             loadLevel(gameState.level + 1);
@@ -609,6 +804,22 @@ function update() {
         }
     }
 
+    // --- Multi-artifact collection (level 7) ---
+    for (const art of artifacts) {
+        if (art.collected) continue;
+        art.animFrame += 0.08;
+
+        if (player.x < art.x + art.width &&
+            player.x + player.width > art.x &&
+            player.y < art.y + art.height &&
+            player.y + player.height > art.y) {
+            art.collected = true;
+            collectedArtifacts.push(art.requiredNpc);
+            gameState.score += 100;
+            showMessage('Артефакт найден! Принеси его нуждающемуся!');
+        }
+    }
+
     // --- NPC interaction ---
     if (npc) {
         const distToNPC = Math.abs(player.x - npc.x);
@@ -627,9 +838,31 @@ function update() {
         }
     }
 
+    // --- Multi-NPC interaction (level 7) ---
+    for (const npcData of npcs) {
+        const distToNPC = Math.abs(player.x - npcData.x);
+        if (distToNPC < 60 && keyEPressed) {
+            if (npcData.hasQuest) {
+                const hasRequiredArtifact = collectedArtifacts.includes(npcData.requiredNpc);
+                if (hasRequiredArtifact) {
+                    npcData.hasQuest = false;
+                    collectedArtifacts = collectedArtifacts.filter(a => a !== npcData.requiredNpc);
+                    gameState.score += 200;
+                    showMessage('Благодарю тебя, герой! Святилище будет помнить о тебе!');
+                } else {
+                    showMessage(npcData.dialog);
+                }
+            }
+            keyEPressed = false;
+        }
+    }
+
     if (player.invincible > 0) player.invincible--;
 
-    const maxCameraX = 2500 - canvas.width;
+    let maxCameraX = 2500 - canvas.width;
+    if (gameState.level === 7) {
+        maxCameraX = 5200 - canvas.width;
+    }
     cameraX = Math.max(0, Math.min(maxCameraX, player.x - canvas.width / 3));
 
     updateUI();
@@ -687,6 +920,9 @@ function render() {
         if (currentLevel.bg === 2) ctx.fillStyle = '#1a0a00';
         if (currentLevel.bg === 3) ctx.fillStyle = '#2a1a4a';
         if (currentLevel.bg === 4) ctx.fillStyle = '#2a1a1a';
+        if (currentLevel.bg === 5) ctx.fillStyle = '#2F4F4F';
+        if (currentLevel.bg === 6) ctx.fillStyle = '#B0E0E6';
+        if (currentLevel.bg === 7) ctx.fillStyle = '#1a1a2e';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
@@ -770,23 +1006,21 @@ function render() {
         const npcColors = {
             'Хранитель Леса': { body: '#2E8B57', robe: '#1E5631', accent: '#FFD700', skin: '#DEB887' },
             'Старый Шахтёр': { body: '#8B4513', robe: '#5D3A1A', accent: '#C0C0C0', skin: '#DEB887' },
-            'Капитан Стражи': { body: '#4169E1', robe: '#1E3A8A', accent: '#FFD700', skin: '#DEB887' },
-            'Огненный Маг': { body: '#DC143C', robe: '#8B0000', accent: '#FF4500', skin: '#DEB887' }
+            'Фермер Иван': { body: '#8B4513', robe: '#D2691E', accent: '#FFD700', skin: '#DEB887' },
+            'Старший Смотритель': { body: '#696969', robe: '#2F4F4F', accent: '#C0C0C0', skin: '#DEB887' },
+            'Старый Капитан': { body: '#8B4513', robe: '#5D3A1A', accent: '#FFD700', skin: '#DEB887' },
+            'Ледяная Ведьма': { body: '#4169E1', robe: '#1E3A8A', accent: '#87CEEB', skin: '#E0FFFF' }
         };
         const colors = npcColors[npc.name] || { body: '#666', robe: '#333', accent: '#fff', skin: '#DEB887' };
 
-        // Robe (body lower)
         ctx.fillStyle = colors.robe;
         ctx.fillRect(npc.x + 2, npc.y + 20, 28, 20);
-        // Body upper
         ctx.fillStyle = colors.body;
         ctx.fillRect(npc.x + 6, npc.y + 10, 20, 14);
-        // Head
         ctx.fillStyle = colors.skin;
         ctx.beginPath();
         ctx.arc(npc.x + 16, npc.y + 6, 8, 0, Math.PI * 2);
         ctx.fill();
-        // Hat/helmet
         ctx.fillStyle = colors.accent;
         ctx.beginPath();
         ctx.moveTo(npc.x + 16, npc.y - 8);
@@ -794,16 +1028,13 @@ function render() {
         ctx.lineTo(npc.x + 26, npc.y + 4);
         ctx.closePath();
         ctx.fill();
-        // Eyes
         ctx.fillStyle = '#000';
         ctx.fillRect(npc.x + 12, npc.y + 4, 3, 3);
         ctx.fillRect(npc.x + 19, npc.y + 4, 3, 3);
-        // Arms
         ctx.fillStyle = colors.body;
         ctx.fillRect(npc.x, npc.y + 14, 6, 12);
         ctx.fillRect(npc.x + 26, npc.y + 14, 6, 12);
 
-        // Interaction prompt
         const distToNPC = Math.abs(player.x - npc.x);
         if (distToNPC < 60) {
             ctx.fillStyle = '#fff';
@@ -818,6 +1049,78 @@ function render() {
                 ctx.fillText('✓', npc.x + 12, npc.y - 28);
             }
         }
+    }
+
+    // Multi-NPC rendering (level 7)
+    const npcNames7 = {
+        'Архивариус Элдор': { body: '#8B4513', robe: '#5D3A1A', accent: '#DAA520', skin: '#DEB887' },
+        'Хранительница Тайн': { body: '#4B0082', robe: '#2E0854', accent: '#9400D3', skin: '#FFE4E1' },
+        'Мастер Мечей': { body: '#696969', robe: '#2F4F4F', accent: '#C0C0C0', skin: '#DEB887' },
+        'Алхимик Зельевар': { body: '#2E8B57', robe: '#1E5631', accent: '#00FF7F', skin: '#DEB887' },
+        'Повелитель Ветров': { body: '#87CEEB', robe: '#4682B4', accent: '#E0FFFF', skin: '#FFE4E1' },
+        'Хранитель Огня': { body: '#FF4500', robe: '#8B0000', accent: '#FFA500', skin: '#DEB887' },
+        'Страж Времени': { body: '#FFD700', robe: '#B8860B', accent: '#FF8C00', skin: '#DEB887' },
+        'Владыка Теней': { body: '#2F2F2F', robe: '#1A1A1A', accent: '#8B008B', skin: '#E6E6FA' }
+    };
+    
+    for (const npcData of npcs) {
+        const colors7 = npcNames7[npcData.name] || { body: '#666', robe: '#333', accent: '#fff', skin: '#DEB887' };
+        
+        ctx.fillStyle = colors7.robe;
+        ctx.fillRect(npcData.x + 2, npcData.y + 20, 28, 20);
+        ctx.fillStyle = colors7.body;
+        ctx.fillRect(npcData.x + 6, npcData.y + 10, 20, 14);
+        ctx.fillStyle = colors7.skin;
+        ctx.beginPath();
+        ctx.arc(npcData.x + 16, npcData.y + 6, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = colors7.accent;
+        ctx.beginPath();
+        ctx.moveTo(npcData.x + 16, npcData.y - 8);
+        ctx.lineTo(npcData.x + 6, npcData.y + 4);
+        ctx.lineTo(npcData.x + 26, npcData.y + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.fillRect(npcData.x + 12, npcData.y + 4, 3, 3);
+        ctx.fillRect(npcData.x + 19, npcData.y + 4, 3, 3);
+        ctx.fillStyle = colors7.body;
+        ctx.fillRect(npcData.x, npcData.y + 14, 6, 12);
+        ctx.fillRect(npcData.x + 26, npcData.y + 14, 6, 12);
+
+        const distToNPC = Math.abs(player.x - npcData.x);
+        if (distToNPC < 60) {
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px monospace';
+            ctx.fillText('[E]', npcData.x + 6, npcData.y - 16);
+
+            const hasArtifactForThis = collectedArtifacts.includes(npcData.requiredNpc);
+            if (npcData.hasQuest && !hasArtifactForThis) {
+                ctx.fillStyle = '#FFD700';
+                ctx.fillText('!', npcData.x + 14, npcData.y - 28);
+            } else if (hasArtifactForThis && npcData.hasQuest) {
+                ctx.fillStyle = '#00FF00';
+                ctx.fillText('✓', npcData.x + 12, npcData.y - 28);
+            }
+        }
+    }
+
+    // Multi-artifact rendering (level 7)
+    for (const art of artifacts) {
+        if (art.collected) continue;
+        const frame = Math.floor(art.animFrame) % 10;
+        const starImg = starImages[frame];
+        if (starImg) {
+            ctx.drawImage(starImg, art.x - 8, art.y - 8, 48, 48);
+        } else {
+            ctx.fillStyle = '#FFD700';
+            ctx.font = '32px Arial';
+            ctx.fillText('★', art.x, art.y + 28);
+        }
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+        ctx.beginPath();
+        ctx.arc(art.x + 16, art.y + 16, 24 + Math.sin(art.animFrame * 3) * 4, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     // Enemies
