@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adventure Quest</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Press Start 2P', monospace;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            border: 4px solid #ffd700;
+            border-radius: 8px;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.4), inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        canvas { display: block; }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 12px;
+            text-shadow: 2px 2px 0 #000;
+            z-index: 10;
+            display: flex;
+            gap: 20px;
+        }
+        #ui div {
+            background: rgba(0,0,0,0.6);
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 2px solid #ffd700;
+        }
+        #overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: #fff;
+            text-align: center;
+        }
+        #overlay h1 {
+            font-size: 28px;
+            color: #ffd700;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 0 #ff0000;
+        }
+        #overlay p {
+            font-size: 12px;
+            margin: 10px 0;
+            color: #87ceeb;
+        }
+        #overlay .start-btn {
+            margin-top: 40px;
+            padding: 15px 40px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px 0 #b8860b;
+        }
+        #overlay .start-btn:hover { background: #ffec8b; }
+        #overlay .start-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        #message {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 10px;
+            text-shadow: 1px 1px 0 #000;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 16px;
+            border-radius: 4px;
+            display: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div>Уровень: <span id="levelDisplay">1</span></div>
+            <div>Монеты: <span id="coinsDisplay">0</span></div>
+            <div>Очки: <span id="scoreDisplay">0</span></div>
+            <div>Жизни: <span id="livesDisplay">3</span></div>
+        </div>
+        <div id="message">Найди выход!</div>
+        <div id="overlay">
+            <h1>ADVENTURE QUEST</h1>
+            <p>Управление:</p>
+            <p>← → или A D - движение</p>
+            <p>ПРОБЕЛ или W - прыжок</p>
+            <p>E - взаимодействие с NPC</p>
+            <p>Пробеги все уровни и найди выход!</p>
+            <button class="start-btn" onclick="startGame()">ИГРАТЬ</button>
+        </div>
+    </div>
+
+    <script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = 800;
+canvas.height = 500;
+
+const GRAVITY = 0.7;
+const JUMP_FORCE = -14;
+const SPEED = 5;
+const TILE_SIZE = 40;
+const PLAYER_WIDTH = 32;
+const PLAYER_HEIGHT = 48;
+
+const keys = {};
+let keyEPressed = false;
+let gameRunning = false;
+
+let gameState = {
+    level: 1,
+    coins: 0,
+    score: 0,
+    lives: 3
+};
+
+let bgImages = {};
+let playerImages = { idle: [], walk: [], jump: null, attack: [], hurt: null };
+let enemyImages = { crab: [], plant: [], ghost: [] };
+let coinImages = [];
+let starImages = {};
+
+let imagesLoaded = 0;
+
+function loadImage(src) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => { imagesLoaded++; resolve(img); };
+        img.onerror = () => { imagesLoaded++; resolve(null); };
+        img.src = src;
+    });
+}
+
+async function preloadAssets() {
+    const loadPromises = [];
+
+    for (let i = 0; i <= 7; i++) {
+        loadPromises.push(loadImage(`assets/Interactive/coin_gold_${i}.png`).then(img => {
+            if (img) coinImages[i] = img;
+        }));
+    }
+
+    loadPromises.push(loadImage('assets/Player/player_idle_0.png').then(img => { if (img) playerImages.idle[0] = img; }));
+    loadPromises.push(loadImage('assets/Player/player_idle_1.png').then(img => { if (img) playerImages.idle[1] = img; }));
+    loadPromises.push(loadImage('assets/Player/player_walk_0.png').then(img => { if (img) playerImages.walk[0] = img; }));
+    loadPromises.push(loadImage('assets/Player/player_walk_1.png').then(img => { if (img) playerImages.walk[1] = img; }));
+    loadPromises.push(loadImage('assets/Player/player_jump.png').then(img => { if (img) playerImages.jump = img; }));
+    loadPromises.push(loadImage('assets/Player/player_attack_0.png').then(img => { if (img) playerImages.attack[0] = img; }));
+    loadPromises.push(loadImage('assets/Player/player_hurt.png').then(img => { if (img) playerImages.hurt = img; }));
+
+    loadPromises.push(loadImage('assets/Enemies/crab_walk_0.png').then(img => { if (img) enemyImages.crab[0] = img; }));
+    loadPromises.push(loadImage('assets/Enemies/crab_walk_1.png').then(img => { if (img) enemyImages.crab[1] = img; }));
+    loadPromises.push(loadImage('assets/Enemies/plant_idle_0.png').then(img => { if (img) enemyImages.plant[0] = img; }));
+    loadPromises.push(loadImage('assets/Enemies/plant_idle_1.png').then(img => { if (img) enemyImages.plant[1] = img; }));
+    loadPromises.push(loadImage('assets/Enemies/ghost_float_0.png').then(img => { if (img) enemyImages.ghost[0] = img; }));
+    loadPromises.push(loadImage('assets/Enemies/ghost_float_1.png').then(img => { if (img) enemyImages.ghost[1] = img; }));
+
+    for (let i = 0; i <= 9; i++) {
+        loadPromises.push(loadImage(`assets/Interactive/star_${i}.png`).then(img => {
+            if (img) starImages[i] = img;
+        }));
+    }
+
+    loadPromises.push(loadImage('1level.png').then(img => { if (img) bgImages[1] = img; }));
+    loadPromises.push(loadImage('2level.jpeg').then(img => { if (img) bgImages[2] = img; }));
+    loadPromises.push(loadImage('3level.png').then(img => { if (img) bgImages[3] = img; }));
+    loadPromises.push(loadImage('4level.png').then(img => { if (img) bgImages[4] = img; }));
+
+    await Promise.all(loadPromises);
+}
+
+// ==================== LEVELS ====================
+const levels = {
+    1: {
+        name: 'Лесные просторы', bg: 1, groundY: 420,
+        groundTiles: [
+            { x: 0, type: 'grass_left' }, { x: 40, type: 'grass_mid' }, { x: 80, type: 'grass_mid' },
+            { x: 120, type: 'grass_mid' }, { x: 160, type: 'grass_mid' }, { x: 200, type: 'grass_mid' },
+            { x: 240, type: 'grass_mid' }, { x: 280, type: 'grass_mid' }, { x: 320, type: 'grass_mid' },
+            { x: 360, type: 'grass_mid' }, { x: 400, type: 'grass_mid' }, { x: 440, type: 'grass_right' },
+            { x: 480, type: 'dirt' },
+            { x: 520, type: 'grass_left' }, { x: 560, type: 'grass_mid' }, { x: 600, type: 'grass_mid' },
+            { x: 640, type: 'grass_mid' }, { x: 680, type: 'grass_mid' }, { x: 720, type: 'grass_mid' },
+            { x: 760, type: 'grass_mid' }, { x: 800, type: 'grass_mid' }, { x: 840, type: 'grass_mid' },
+            { x: 880, type: 'grass_mid' }, { x: 920, type: 'grass_right' },
+            { x: 960, type: 'dirt' },
+            { x: 1000, type: 'grass_left' }, { x: 1040, type: 'grass_mid' }, { x: 1080, type: 'grass_mid' },
+            { x: 1120, type: 'grass_mid' }, { x: 1160, type: 'grass_right' },
+            { x: 1200, type: 'dirt' },
+            { x: 1240, type: 'grass_left' }, { x: 1280, type: 'grass_mid' }, { x: 1320, type: 'grass_mid' },
+            { x: 1360, type: 'grass_mid' }, { x: 1400, type: 'grass_mid' }, { x: 1440, type: 'grass_right' },
+            { x: 1480, type: 'dirt' },
+            { x: 1520, type: 'grass_left' }, { x: 1560, type: 'grass_mid' }, { x: 1600, type: 'grass_mid' },
+            { x: 1640, type: 'grass_mid' }, { x: 1680, type: 'grass_mid' }, { x: 1720, type: 'grass_mid' },
+            { x: 1760, type: 'grass_right' },
+            { x: 1800, type: 'dirt' },
+            { x: 1840, type: 'grass_left' }, { x: 1880, type: 'grass_mid' }, { x: 1920, type: 'grass_mid' },
+            { x: 1960, type: 'grass_mid' }, { x: 2000, type: 'grass_right' },
+            { x: 2040, type: 'dirt' },
+            { x: 2080, type: 'grass_left' }, { x: 2120, type: 'grass_mid' }, { x: 2160, type: 'grass_mid' },
+            { x: 2200, type: 'grass_mid' }, { x: 2240, type: 'grass_mid' }, { x: 2280, type: 'grass_mid' },
+            { x: 2320, type: 'grass_mid' }, { x: 2360, type: 'grass_mid' }, { x: 2400, type: 'grass_mid' },
+            { x: 2440, type: 'grass_right' },
+        ],
+        platforms: [
+            { x: 300, y: 340, w: 120, h: 20 }, { x: 550, y: 300, w: 100, h: 20 },
+            { x: 800, y: 260, w: 100, h: 20 }, { x: 1050, y: 300, w: 120, h: 20 },
+            { x: 1300, y: 340, w: 100, h: 20 }, { x: 1600, y: 280, w: 150, h: 20 },
+            { x: 1900, y: 320, w: 100, h: 20 }, { x: 2200, y: 260, w: 120, h: 20 },
+        ],
+        enemies: [
+            { x: 500, y: 388, type: 'crab' }, { x: 900, y: 388, type: 'crab' },
+            { x: 1200, y: 388, type: 'plant' }, { x: 1600, y: 388, type: 'crab' },
+            { x: 2000, y: 388, type: 'plant' }, { x: 2350, y: 388, type: 'crab' },
+        ],
+        coins: [
+            { x: 340, y: 300 }, { x: 580, y: 260 }, { x: 830, y: 220 },
+            { x: 1080, y: 260 }, { x: 1330, y: 300 }, { x: 1650, y: 240 },
+            { x: 1930, y: 280 }, { x: 2230, y: 220 },
+        ],
+        artifact: { x: 1800, y: 220, collected: false },
+        npc: { x: 2300, y: 348, name: 'Хранитель Леса', dialog: 'Найди в лесу Древнюю Звезду и принеси мне! Она спрятана на вершине холма.' },
+        exitX: 2460, exitY: 350, startX: 80, startY: 380
+    },
+    2: {
+        name: 'Подземная пещера', bg: 2, groundY: 420,
+        groundTiles: [
+            { x: 0, type: 'cave_left' }, { x: 40, type: 'cave_mid' }, { x: 80, type: 'cave_mid' },
+            { x: 120, type: 'cave_mid' }, { x: 160, type: 'cave_mid' }, { x: 200, type: 'cave_mid' },
+            { x: 240, type: 'cave_mid' }, { x: 280, type: 'cave_mid' }, { x: 320, type: 'cave_mid' },
+            { x: 360, type: 'cave_mid' }, { x: 400, type: 'cave_mid' }, { x: 440, type: 'cave_right' },
+            { x: 480, type: 'cave_fill' },
+            { x: 520, type: 'cave_left' }, { x: 560, type: 'cave_mid' }, { x: 600, type: 'cave_mid' },
+            { x: 640, type: 'cave_mid' }, { x: 680, type: 'cave_mid' }, { x: 720, type: 'cave_mid' },
+            { x: 760, type: 'cave_mid' }, { x: 800, type: 'cave_mid' }, { x: 840, type: 'cave_mid' },
+            { x: 880, type: 'cave_right' }, { x: 920, type: 'cave_fill' },
+            { x: 960, type: 'cave_left' }, { x: 1000, type: 'cave_mid' }, { x: 1040, type: 'cave_mid' },
+            { x: 1080, type: 'cave_mid' }, { x: 1120, type: 'cave_mid' }, { x: 1160, type: 'cave_right' },
+            { x: 1200, type: 'cave_fill' },
+            { x: 1240, type: 'cave_left' }, { x: 1280, type: 'cave_mid' }, { x: 1320, type: 'cave_mid' },
+            { x: 1360, type: 'cave_mid' }, { x: 1400, type: 'cave_mid' }, { x: 1440, type: 'cave_mid' },
+            { x: 1480, type: 'cave_right' }, { x: 1520, type: 'cave_fill' },
+            { x: 1560, type: 'cave_left' }, { x: 1600, type: 'cave_mid' }, { x: 1640, type: 'cave_mid' },
+            { x: 1680, type: 'cave_mid' }, { x: 1720, type: 'cave_mid' }, { x: 1760, type: 'cave_mid' },
+            { x: 1800, type: 'cave_mid' }, { x: 1840, type: 'cave_right' }, { x: 1880, type: 'cave_fill' },
+            { x: 1920, type: 'cave_left' }, { x: 1960, type: 'cave_mid' }, { x: 2000, type: 'cave_mid' },
+            { x: 2040, type: 'cave_mid' }, { x: 2080, type: 'cave_mid' }, { x: 2120, type: 'cave_mid' },
+            { x: 2160, type: 'cave_mid' }, { x: 2200, type: 'cave_mid' }, { x: 2240, type: 'cave_mid' },
+            { x: 2280, type: 'cave_mid' }, { x: 2320, type: 'cave_mid' }, { x: 2360, type: 'cave_right' },
+            { x: 2400, type: 'cave_fill' },
+        ],
+        platforms: [
+            { x: 200, y: 350, w: 80, h: 20 }, { x: 400, y: 300, w: 100, h: 20 },
+            { x: 650, y: 250, w: 80, h: 20 }, { x: 900, y: 320, w: 100, h: 20 },
+            { x: 1150, y: 280, w: 80, h: 20 }, { x: 1400, y: 350, w: 100, h: 20 },
+            { x: 1650, y: 300, w: 80, h: 20 }, { x: 1950, y: 250, w: 100, h: 20 },
+            { x: 2250, y: 320, w: 80, h: 20 },
+        ],
+        enemies: [
+            { x: 400, y: 388, type: 'ghost' }, { x: 750, y: 388, type: 'ghost' },
+            { x: 1100, y: 388, type: 'plant' }, { x: 1500, y: 388, type: 'ghost' },
+            { x: 1900, y: 388, type: 'plant' }, { x: 2300, y: 388, type: 'crab' },
+        ],
+        coins: [
+            { x: 220, y: 310 }, { x: 430, y: 260 }, { x: 680, y: 210 },
+            { x: 930, y: 280 }, { x: 1180, y: 240 }, { x: 1430, y: 310 },
+            { x: 1680, y: 260 }, { x: 1980, y: 210 }, { x: 2280, y: 280 },
+        ],
+        artifact: { x: 1600, y: 150, collected: false },
+        npc: { x: 2200, y: 348, name: 'Старый Шахтёр', dialog: 'В глубине пещеры лежит Кристалл Силы. Найди его и принеси мне!' },
+        exitX: 2420, exitY: 350, startX: 80, startY: 380
+    },
+    3: {
+        name: 'Забытое королевство', bg: 3, groundY: 420,
+        groundTiles: [
+            { x: 0, type: 'stone_left' }, { x: 40, type: 'stone_mid' }, { x: 80, type: 'stone_mid' },
+            { x: 120, type: 'stone_mid' }, { x: 160, type: 'stone_mid' }, { x: 200, type: 'stone_mid' },
+            { x: 240, type: 'stone_mid' }, { x: 280, type: 'stone_mid' }, { x: 320, type: 'stone_mid' },
+            { x: 360, type: 'stone_mid' }, { x: 400, type: 'stone_mid' }, { x: 440, type: 'stone_right' },
+            { x: 480, type: 'stone_fill' },
+            { x: 520, type: 'stone_left' }, { x: 560, type: 'stone_mid' }, { x: 600, type: 'stone_mid' },
+            { x: 640, type: 'stone_mid' }, { x: 680, type: 'stone_mid' }, { x: 720, type: 'stone_mid' },
+            { x: 760, type: 'stone_mid' }, { x: 800, type: 'stone_mid' }, { x: 840, type: 'stone_mid' },
+            { x: 880, type: 'stone_right' }, { x: 920, type: 'stone_fill' },
+            { x: 960, type: 'stone_left' }, { x: 1000, type: 'stone_mid' }, { x: 1040, type: 'stone_mid' },
+            { x: 1080, type: 'stone_mid' }, { x: 1120, type: 'stone_right' }, { x: 1160, type: 'stone_fill' },
+            { x: 1200, type: 'stone_left' }, { x: 1240, type: 'stone_mid' }, { x: 1280, type: 'stone_mid' },
+            { x: 1320, type: 'stone_mid' }, { x: 1360, type: 'stone_mid' }, { x: 1400, type: 'stone_right' },
+            { x: 1440, type: 'stone_fill' },
+            { x: 1480, type: 'stone_left' }, { x: 1520, type: 'stone_mid' }, { x: 1560, type: 'stone_mid' },
+            { x: 1600, type: 'stone_mid' }, { x: 1640, type: 'stone_mid' }, { x: 1680, type: 'stone_right' },
+            { x: 1720, type: 'stone_fill' },
+            { x: 1760, type: 'stone_left' }, { x: 1800, type: 'stone_mid' }, { x: 1840, type: 'stone_mid' },
+            { x: 1880, type: 'stone_mid' }, { x: 1920, type: 'stone_right' }, { x: 1960, type: 'stone_fill' },
+            { x: 2000, type: 'stone_left' }, { x: 2040, type: 'stone_mid' }, { x: 2080, type: 'stone_mid' },
+            { x: 2120, type: 'stone_mid' }, { x: 2160, type: 'stone_mid' }, { x: 2200, type: 'stone_right' },
+            { x: 2240, type: 'stone_fill' },
+            { x: 2280, type: 'stone_left' }, { x: 2320, type: 'stone_mid' }, { x: 2360, type: 'stone_mid' },
+            { x: 2400, type: 'stone_mid' }, { x: 2440, type: 'stone_right' }, { x: 2480, type: 'stone_fill' },
+        ],
+        platforms: [
+            { x: 200, y: 360, w: 100, h: 20 }, { x: 450, y: 320, w: 80, h: 20 },
+            { x: 650, y: 280, w: 100, h: 20 }, { x: 900, y: 320, w: 80, h: 20 },
+            { x: 1100, y: 360, w: 100, h: 20 }, { x: 1400, y: 300, w: 80, h: 20 },
+            { x: 1600, y: 250, w: 100, h: 20 }, { x: 1900, y: 320, w: 80, h: 20 },
+            { x: 2100, y: 280, w: 100, h: 20 }, { x: 2400, y: 340, w: 80, h: 20 },
+        ],
+        enemies: [
+            { x: 350, y: 388, type: 'crab' }, { x: 700, y: 388, type: 'plant' },
+            { x: 1000, y: 388, type: 'crab' }, { x: 1300, y: 388, type: 'ghost' },
+            { x: 1700, y: 388, type: 'plant' }, { x: 2100, y: 388, type: 'crab' },
+        ],
+        coins: [
+            { x: 230, y: 320 }, { x: 480, y: 280 }, { x: 680, y: 240 },
+            { x: 930, y: 280 }, { x: 1130, y: 320 }, { x: 1430, y: 260 },
+            { x: 1630, y: 210 }, { x: 1930, y: 280 }, { x: 2130, y: 240 },
+            { x: 2430, y: 300 },
+        ],
+        artifact: { x: 1400, y: 150, collected: false },
+        npc: { x: 2100, y: 348, name: 'Капитан Стражи', dialog: 'Королевская Печать утеряна в руинах замка. Найди её и верни мне!' },
+        exitX: 2520, exitY: 350, startX: 80, startY: 380
+    },
+    4: {
+        name: 'Вулканическая обитель', bg: 4, groundY: 420,
+        groundTiles: [
+            { x: 0, type: 'lava_left' }, { x: 40, type: 'lava_mid' }, { x: 80, type: 'lava_mid' },
+            { x: 120, type: 'lava_mid' }, { x: 160, type: 'lava_mid' }, { x: 200, type: 'lava_mid' },
+            { x: 240, type: 'lava_mid' }, { x: 280, type: 'lava_mid' }, { x: 320, type: 'lava_mid' },
+            { x: 360, type: 'lava_mid' }, { x: 400, type: 'lava_mid' }, { x: 440, type: 'lava_right' },
+            { x: 480, type: 'lava_fill' },
+            { x: 520, type: 'lava_left' }, { x: 560, type: 'lava_mid' }, { x: 600, type: 'lava_mid' },
+            { x: 640, type: 'lava_mid' }, { x: 680, type: 'lava_mid' }, { x: 720, type: 'lava_mid' },
+            { x: 760, type: 'lava_mid' }, { x: 800, type: 'lava_mid' }, { x: 840, type: 'lava_mid' },
+            { x: 880, type: 'lava_right' }, { x: 920, type: 'lava_fill' },
+            { x: 960, type: 'lava_left' }, { x: 1000, type: 'lava_mid' }, { x: 1040, type: 'lava_mid' },
+            { x: 1080, type: 'lava_mid' }, { x: 1120, type: 'lava_right' }, { x: 1160, type: 'lava_fill' },
+            { x: 1200, type: 'lava_left' }, { x: 1240, type: 'lava_mid' }, { x: 1280, type: 'lava_mid' },
+            { x: 1320, type: 'lava_mid' }, { x: 1360, type: 'lava_mid' }, { x: 1400, type: 'lava_right' },
+            { x: 1440, type: 'lava_fill' },
+            { x: 1480, type: 'lava_left' }, { x: 1520, type: 'lava_mid' }, { x: 1560, type: 'lava_mid' },
+            { x: 1600, type: 'lava_mid' }, { x: 1640, type: 'lava_mid' }, { x: 1680, type: 'lava_mid' },
+            { x: 1720, type: 'lava_right' }, { x: 1760, type: 'lava_fill' },
+            { x: 1800, type: 'lava_left' }, { x: 1840, type: 'lava_mid' }, { x: 1880, type: 'lava_mid' },
+            { x: 1920, type: 'lava_mid' }, { x: 1960, type: 'lava_right' }, { x: 2000, type: 'lava_fill' },
+            { x: 2040, type: 'lava_left' }, { x: 2080, type: 'lava_mid' }, { x: 2120, type: 'lava_mid' },
+            { x: 2160, type: 'lava_mid' }, { x: 2200, type: 'lava_mid' }, { x: 2240, type: 'lava_right' },
+            { x: 2280, type: 'lava_fill' },
+            { x: 2320, type: 'lava_left' }, { x: 2360, type: 'lava_mid' }, { x: 2400, type: 'lava_mid' },
+            { x: 2440, type: 'lava_right' }, { x: 2480, type: 'lava_fill' },
+        ],
+        platforms: [
+            { x: 200, y: 370, w: 80, h: 20 }, { x: 400, y: 330, w: 100, h: 20 },
+            { x: 650, y: 290, w: 80, h: 20 }, { x: 850, y: 340, w: 100, h: 20 },
+            { x: 1100, y: 300, w: 80, h: 20 }, { x: 1300, y: 250, w: 100, h: 20 },
+            { x: 1600, y: 310, w: 80, h: 20 }, { x: 1800, y: 270, w: 100, h: 20 },
+            { x: 2100, y: 330, w: 80, h: 20 }, { x: 2300, y: 290, w: 100, h: 20 },
+        ],
+        enemies: [
+            { x: 300, y: 388, type: 'plant' }, { x: 600, y: 388, type: 'crab' },
+            { x: 900, y: 388, type: 'plant' }, { x: 1200, y: 388, type: 'crab' },
+            { x: 1500, y: 388, type: 'ghost' }, { x: 1900, y: 388, type: 'plant' },
+            { x: 2200, y: 388, type: 'crab' },
+        ],
+        coins: [
+            { x: 220, y: 330 }, { x: 430, y: 290 }, { x: 680, y: 250 },
+            { x: 880, y: 300 }, { x: 1130, y: 260 }, { x: 1330, y: 210 },
+            { x: 1630, y: 270 }, { x: 1830, y: 230 }, { x: 2130, y: 290 },
+            { x: 2330, y: 250 },
+        ],
+        artifact: { x: 1200, y: 150, collected: false },
+        npc: { x: 2000, y: 348, name: 'Огненный Маг', dialog: 'Сердце Вулкана скрыто в лавовых пещерах. Добудь его для меня!' },
+        exitX: 2500, exitY: 350, startX: 80, startY: 380
+    }
+};
+
+// ==================== PLAYER ====================
+const player = {
+    x: 50, y: 300, vx: 0, vy: 0,
+    width: PLAYER_WIDTH, height: PLAYER_HEIGHT,
+    onGround: false, facing: 1,
+    invincible: 0, animFrame: 0, state: 'idle'
+};
+
+let currentLevel = null;
+let enemies = [];
+let coins = [];
+let cameraX = 0;
+let platforms = [];
+let artifact = null;
+let hasArtifact = false;
+let npc = null;
+
+// ==================== LOAD LEVEL ====================
+function loadLevel(levelNum) {
+    const level = levels[levelNum];
+    if (!level) { gameComplete(); return; }
+
+    currentLevel = level;
+    gameState.level = levelNum;
+    const groundY = level.groundY;
+
+    player.x = level.startX;
+    player.y = groundY - player.height;
+    player.vx = 0; player.vy = 0;
+    player.onGround = true;
+    player.invincible = 0;
+
+    platforms = [...level.platforms];
+
+    enemies = level.enemies.map(e => ({
+        x: e.x, y: groundY - 32,
+        type: e.type,
+        vx: e.type === 'ghost' ? 0 : (Math.random() > 0.5 ? 1.5 : -1.5),
+        width: 32, height: 32,
+        animFrame: 0,
+        active: true,
+        originX: e.x,
+        patrolRange: 80
+    }));
+
+    coins = level.coins.map(c => ({
+        x: c.x, y: c.y,
+        width: 24, height: 24,
+        animFrame: 0, collected: false
+    }));
+
+    artifact = level.artifact ? { ...level.artifact, collected: false, animFrame: 0, width: 32, height: 32 } : null;
+    hasArtifact = false;
+    npc = level.npc ? { ...level.npc, width: 32, height: 40, hasQuest: true } : null;
+    keyEPressed = false;
+    cameraX = 0;
+    updateUI();
+}
+
+function updateUI() {
+    document.getElementById('levelDisplay').textContent = gameState.level;
+    document.getElementById('coinsDisplay').textContent = gameState.coins;
+    document.getElementById('scoreDisplay').textContent = gameState.score;
+    document.getElementById('livesDisplay').textContent = gameState.lives;
+}
+
+// ==================== UPDATE ====================
+function update() {
+    if (!gameRunning || !currentLevel) return;
+
+    const groundY = currentLevel.groundY;
+
+    // --- Player movement ---
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+        player.vx = -SPEED;
+        player.facing = -1;
+        if (player.onGround) player.state = 'walk';
+    } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+        player.vx = SPEED;
+        player.facing = 1;
+        if (player.onGround) player.state = 'walk';
+    } else {
+        player.vx = 0;
+        if (player.onGround) player.state = 'idle';
+    }
+
+    if (!player.onGround) player.state = 'jump';
+
+    if ((keys[' '] || keys['w'] || keys['W'] || keys['ArrowUp']) && player.onGround) {
+        player.vy = JUMP_FORCE;
+        player.onGround = false;
+        player.state = 'jump';
+    }
+
+    player.vy += GRAVITY;
+    player.x += player.vx;
+    if (player.x < 0) player.x = 0;
+
+    let onPlatform = false;
+    player.y += player.vy;
+
+    // Platform collision
+    for (const plat of platforms) {
+        if (player.x + player.width > plat.x && player.x < plat.x + plat.w &&
+            player.y + player.height >= plat.y && player.y + player.height <= plat.y + plat.h + player.vy) {
+            player.y = plat.y - player.height;
+            player.vy = 0;
+            player.onGround = true;
+            onPlatform = true;
+            break;
+        }
+    }
+
+    if (!onPlatform && player.y + player.height >= groundY) {
+        player.y = groundY - player.height;
+        player.vy = 0;
+        player.onGround = true;
+    }
+
+    if (player.y > canvas.height + 50) {
+        playerDeath();
+    }
+
+    // --- Exit check ---
+    const distToExit = Math.hypot(player.x - currentLevel.exitX, player.y - currentLevel.exitY);
+    if (distToExit < 50) {
+        if (npc && npc.hasQuest) {
+            showMessage('Сначала выполни задание NPC!');
+        } else {
+            gameState.score += 100;
+            loadLevel(gameState.level + 1);
+            return;
+        }
+    }
+
+    player.animFrame += 0.1;
+
+    // --- Enemy update & collision ---
+    for (const enemy of enemies) {
+        // Move enemy (patrol back and forth)
+        if (enemy.type !== 'ghost') {
+            enemy.x += enemy.vx;
+            // Patrol within range from origin
+            if (enemy.x < enemy.originX - enemy.patrolRange) {
+                enemy.x = enemy.originX - enemy.patrolRange;
+                enemy.vx = Math.abs(enemy.vx);
+            }
+            if (enemy.x > enemy.originX + enemy.patrolRange) {
+                enemy.x = enemy.originX + enemy.patrolRange;
+                enemy.vx = -Math.abs(enemy.vx);
+            }
+        } else {
+            // Ghost floats up and down slightly
+            enemy.x = enemy.originX + Math.sin(enemy.animFrame * 2) * 30;
+        }
+
+        enemy.animFrame += 0.05;
+
+        // Collision with player
+        if (enemy.active && player.invincible <= 0 &&
+            player.x < enemy.x + enemy.width &&
+            player.x + player.width > enemy.x &&
+            player.y < enemy.y + enemy.height &&
+            player.y + player.height > enemy.y) {
+
+            if (player.vy > 0 && player.y + player.height < enemy.y + enemy.height / 2 + 10) {
+                // Player jumps on enemy - destroy it!
+                enemy.active = false;
+                player.vy = -10;
+                gameState.score += 50;
+            } else {
+                playerDeath();
+            }
+        }
+    }
+
+    // --- Coin collection ---
+    for (const coin of coins) {
+        if (coin.collected) continue;
+        coin.animFrame += 0.1;
+
+        if (player.x < coin.x + coin.width &&
+            player.x + player.width > coin.x &&
+            player.y < coin.y + coin.height &&
+            player.y + player.height > coin.y) {
+            coin.collected = true;
+            gameState.coins++;
+            gameState.score += 10;
+        }
+    }
+
+    // --- Artifact collection (auto-pickup when touching) ---
+    if (artifact && !artifact.collected) {
+        artifact.animFrame += 0.08;
+
+        const artW = artifact.width || 32;
+        const artH = artifact.height || 32;
+        if (player.x < artifact.x + artW &&
+            player.x + player.width > artifact.x &&
+            player.y < artifact.y + artH &&
+            player.y + player.height > artifact.y) {
+            artifact.collected = true;
+            hasArtifact = true;
+            gameState.score += 100;
+            showMessage('Артефакт найден! Вернитесь к: ' + npc.name);
+        }
+    }
+
+    // --- NPC interaction ---
+    if (npc) {
+        const distToNPC = Math.abs(player.x - npc.x);
+        if (distToNPC < 60 && keyEPressed) {
+            if (npc.hasQuest) {
+                if (hasArtifact) {
+                    npc.hasQuest = false;
+                    hasArtifact = false;
+                    gameState.score += 200;
+                    showMessage('Благодарю тебя, герой! Теперь путь свободен!');
+                } else {
+                    showMessage(npc.dialog);
+                }
+            }
+            keyEPressed = false;
+        }
+    }
+
+    if (player.invincible > 0) player.invincible--;
+
+    const maxCameraX = 2500 - canvas.width;
+    cameraX = Math.max(0, Math.min(maxCameraX, player.x - canvas.width / 3));
+
+    updateUI();
+}
+
+// ==================== PLAYER DEATH ====================
+function playerDeath() {
+    gameState.lives--;
+    if (gameState.lives <= 0) {
+        gameOver();
+    } else {
+        player.x = currentLevel.startX;
+        player.y = currentLevel.groundY - player.height;
+        player.vx = 0; player.vy = 0;
+        player.onGround = true;
+        player.invincible = 120;
+    }
+    updateUI();
+}
+
+function gameOver() {
+    gameRunning = false;
+    const overlay = document.getElementById('overlay');
+    overlay.innerHTML = `
+        <h1>GAME OVER</h1>
+        <p>Ваш счёт: ${gameState.score}</p>
+        <p>Монеты: ${gameState.coins}</p>
+        <button class="start-btn" onclick="startGame()">ЕЩЁ РАЗ</button>
+    `;
+    overlay.style.display = 'flex';
+}
+
+function gameComplete() {
+    gameRunning = false;
+    const overlay = document.getElementById('overlay');
+    overlay.innerHTML = `
+        <h1>ПОБЕДА!</h1>
+        <p>Вы прошли все уровни!</p>
+        <p>Счёт: ${gameState.score}</p>
+        <p>Монеты: ${gameState.coins}</p>
+        <button class="start-btn" onclick="startGame()">ИГРАТЬ СНОВА</button>
+    `;
+    overlay.style.display = 'flex';
+}
+
+// ==================== RENDER ====================
+function render() {
+    if (!currentLevel) return;
+
+    const bg = bgImages[currentLevel.bg];
+    if (bg) {
+        ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+    } else {
+        ctx.fillStyle = '#87CEEB';
+        if (currentLevel.bg === 2) ctx.fillStyle = '#1a0a00';
+        if (currentLevel.bg === 3) ctx.fillStyle = '#2a1a4a';
+        if (currentLevel.bg === 4) ctx.fillStyle = '#2a1a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+
+    // Platforms
+    for (const plat of platforms) {
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+        ctx.fillStyle = '#228B22';
+        ctx.fillRect(plat.x, plat.y, plat.w, 6);
+    }
+
+    const groundY = currentLevel.groundY;
+
+    // Ground tiles
+    for (const tile of currentLevel.groundTiles) {
+        const baseColor = currentLevel.bg === 1 ? '#228B22' :
+                         currentLevel.bg === 2 ? '#4a4a4a' :
+                         currentLevel.bg === 3 ? '#6a6a7a' : '#8B0000';
+        const dirtColor = currentLevel.bg === 1 ? '#8B4513' :
+                         currentLevel.bg === 2 ? '#2a2a2a' :
+                         currentLevel.bg === 3 ? '#3a3a4a' : '#4a0000';
+
+        if (tile.type.includes('left') || tile.type.includes('right') || tile.type.includes('mid')) {
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(tile.x, groundY - 8, 40, 8);
+            ctx.fillStyle = dirtColor;
+            ctx.fillRect(tile.x, groundY, 40, 80);
+        } else if (tile.type === 'dirt') {
+            ctx.fillStyle = dirtColor;
+            ctx.fillRect(tile.x, groundY, 40, 80);
+        } else if (tile.type === 'cave_fill') {
+            ctx.fillStyle = '#3a3a3a';
+            ctx.fillRect(tile.x, groundY, 40, 80);
+        } else if (tile.type === 'stone_fill') {
+            ctx.fillStyle = '#5a5a6a';
+            ctx.fillRect(tile.x, groundY, 40, 80);
+        } else if (tile.type === 'lava_fill') {
+            ctx.fillStyle = '#6a2a2a';
+            ctx.fillRect(tile.x, groundY, 40, 80);
+        }
+    }
+
+    // Coins
+    for (const coin of coins) {
+        if (coin.collected) continue;
+        const frame = Math.floor(coin.animFrame) % coinImages.length;
+        const img = coinImages[frame];
+        if (img) {
+            ctx.drawImage(img, coin.x, coin.y, coin.width, coin.height);
+        } else {
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(coin.x + 12, coin.y + 12, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // Artifact (star)
+    if (artifact && !artifact.collected) {
+        const frame = Math.floor(artifact.animFrame) % 10;
+        const starImg = starImages[frame];
+        if (starImg) {
+            ctx.drawImage(starImg, artifact.x - 8, artifact.y - 8, 48, 48);
+        } else {
+            ctx.fillStyle = '#FFD700';
+            ctx.font = '32px Arial';
+            ctx.fillText('★', artifact.x, artifact.y + 28);
+        }
+        // Glow effect
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+        ctx.beginPath();
+        ctx.arc(artifact.x + 16, artifact.y + 16, 24 + Math.sin(artifact.animFrame * 3) * 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // NPC rendering
+    if (npc) {
+        const npcColors = {
+            'Хранитель Леса': { body: '#2E8B57', robe: '#1E5631', accent: '#FFD700', skin: '#DEB887' },
+            'Старый Шахтёр': { body: '#8B4513', robe: '#5D3A1A', accent: '#C0C0C0', skin: '#DEB887' },
+            'Капитан Стражи': { body: '#4169E1', robe: '#1E3A8A', accent: '#FFD700', skin: '#DEB887' },
+            'Огненный Маг': { body: '#DC143C', robe: '#8B0000', accent: '#FF4500', skin: '#DEB887' }
+        };
+        const colors = npcColors[npc.name] || { body: '#666', robe: '#333', accent: '#fff', skin: '#DEB887' };
+
+        // Robe (body lower)
+        ctx.fillStyle = colors.robe;
+        ctx.fillRect(npc.x + 2, npc.y + 20, 28, 20);
+        // Body upper
+        ctx.fillStyle = colors.body;
+        ctx.fillRect(npc.x + 6, npc.y + 10, 20, 14);
+        // Head
+        ctx.fillStyle = colors.skin;
+        ctx.beginPath();
+        ctx.arc(npc.x + 16, npc.y + 6, 8, 0, Math.PI * 2);
+        ctx.fill();
+        // Hat/helmet
+        ctx.fillStyle = colors.accent;
+        ctx.beginPath();
+        ctx.moveTo(npc.x + 16, npc.y - 8);
+        ctx.lineTo(npc.x + 6, npc.y + 4);
+        ctx.lineTo(npc.x + 26, npc.y + 4);
+        ctx.closePath();
+        ctx.fill();
+        // Eyes
+        ctx.fillStyle = '#000';
+        ctx.fillRect(npc.x + 12, npc.y + 4, 3, 3);
+        ctx.fillRect(npc.x + 19, npc.y + 4, 3, 3);
+        // Arms
+        ctx.fillStyle = colors.body;
+        ctx.fillRect(npc.x, npc.y + 14, 6, 12);
+        ctx.fillRect(npc.x + 26, npc.y + 14, 6, 12);
+
+        // Interaction prompt
+        const distToNPC = Math.abs(player.x - npc.x);
+        if (distToNPC < 60) {
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px monospace';
+            ctx.fillText('[E]', npc.x + 6, npc.y - 16);
+
+            if (npc.hasQuest && !hasArtifact) {
+                ctx.fillStyle = '#FFD700';
+                ctx.fillText('!', npc.x + 14, npc.y - 28);
+            } else if (hasArtifact && npc.hasQuest) {
+                ctx.fillStyle = '#00FF00';
+                ctx.fillText('✓', npc.x + 12, npc.y - 28);
+            }
+        }
+    }
+
+    // Enemies
+    for (const enemy of enemies) {
+        if (!enemy.active) continue;
+        let img = null;
+        const frame = Math.floor(enemy.animFrame) % 2;
+
+        if (enemy.type === 'crab' && enemyImages.crab[frame]) {
+            img = enemyImages.crab[frame];
+        } else if (enemy.type === 'plant' && enemyImages.plant[frame]) {
+            img = enemyImages.plant[frame];
+        } else if (enemy.type === 'ghost' && enemyImages.ghost[frame]) {
+            img = enemyImages.ghost[frame];
+        }
+
+        if (img) {
+            ctx.save();
+            if (enemy.vx < 0) {
+                ctx.translate(enemy.x + enemy.width, enemy.y);
+                ctx.scale(-1, 1);
+                ctx.drawImage(img, 0, 0, enemy.width, enemy.height);
+            } else {
+                ctx.drawImage(img, enemy.x, enemy.y, enemy.width, enemy.height);
+            }
+            ctx.restore();
+        } else {
+            ctx.fillStyle = enemy.type === 'ghost' ? 'rgba(136,136,136,0.7)' :
+                           (enemy.type === 'plant' ? '#228B22' : '#FF4500');
+            ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            // Eyes
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(enemy.x + 8, enemy.y + 8, 4, 4);
+            ctx.fillRect(enemy.x + 20, enemy.y + 8, 4, 4);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(enemy.x + 9, enemy.y + 9, 2, 2);
+            ctx.fillRect(enemy.x + 21, enemy.y + 9, 2, 2);
+        }
+    }
+
+    // Exit portal
+    const exitX = currentLevel.exitX;
+    const exitY = groundY - 70;
+    ctx.fillStyle = '#00FF00';
+    ctx.beginPath();
+    ctx.ellipse(exitX + 20, exitY + 20, 25, 35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.ellipse(exitX + 20, exitY + 20, 35, 45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Player
+    if (player.invincible > 0 && Math.floor(player.invincible / 4) % 2 === 0) {
+        ctx.globalAlpha = 0.5;
+    }
+
+    let img = null;
+    if (player.state === 'idle') {
+        const frame = Math.floor(player.animFrame) % playerImages.idle.length;
+        img = playerImages.idle[frame] || playerImages.idle[0];
+    } else if (player.state === 'walk') {
+        const frame = Math.floor(player.animFrame) % playerImages.walk.length;
+        img = playerImages.walk[frame] || playerImages.walk[0];
+    } else if (player.state === 'jump') {
+        img = playerImages.jump;
+    }
+
+    if (img) {
+        ctx.save();
+        if (player.facing === -1) {
+            ctx.translate(player.x + player.width, player.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(img, 0, 0, player.width, player.height);
+        } else {
+            ctx.drawImage(img, player.x, player.y, player.width, player.height);
+        }
+        ctx.restore();
+    } else {
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
+}
+
+// ==================== GAME LOOP ====================
+function gameLoop() {
+    if (gameRunning) {
+        update();
+        render();
+    }
+    requestAnimationFrame(gameLoop);
+}
+
+async function startGame() {
+    document.getElementById('overlay').style.display = 'none';
+
+    if (Object.keys(playerImages.idle).length === 0 ||
+        Object.keys(enemyImages.crab).length === 0 ||
+        Object.keys(bgImages).length === 0) {
+        await preloadAssets();
+    }
+
+    gameState = { level: 1, coins: 0, score: 0, lives: 3 };
+    gameRunning = true;
+    loadLevel(1);
+}
+
+// ==================== INPUT ====================
+document.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+    }
+    if (e.key === 'e' || e.key === 'E') {
+        keyEPressed = true;
+    }
+});
+
+document.addEventListener('keyup', e => {
+    keys[e.key] = false;
+});
+
+const msgEl = document.getElementById('message');
+let msgTimeout;
+function showMessage(text) {
+    msgEl.textContent = text;
+    msgEl.style.display = 'block';
+    clearTimeout(msgTimeout);
+    msgTimeout = setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+}
+
+gameLoop();
+    </script>
+</body>
+</html>

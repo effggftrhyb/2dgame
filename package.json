@@ -1,0 +1,11 @@
+{
+  "name": "mario-clone",
+  "version": "1.0.0",
+  "description": "2D platformer game like Mario",
+  "scripts": {
+    "start": "npx serve"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
