@@ -2,7 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Adventure Quest</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -95,24 +97,118 @@
             display: none;
             z-index: 10;
         }
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            gap: 10px;
+            z-index: 10;
+        }
+        
+        body.mobile #mobileControls {
+            display: flex !important;
+        }
+        .controlBtn {
+            width: 50px;
+            height: 50px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            border: 2px solid #ffd700;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .controlBtn:active {
+            background: rgba(255,215,0,0.3);
+            transform: scale(0.95);
+        }
+        @media (max-width: 768px), (pointer: coarse) {
+            #gameContainer {
+                max-width: 100vw;
+                max-height: 100vh;
+                border: none;
+                border-radius: 0;
+            }
+            canvas {
+                width: 100vw;
+                height: 65vh;
+                max-height: 65vh;
+                touch-action: none;
+            }
+            #ui {
+                font-size: 8px;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            #ui div {
+                padding: 4px 6px;
+            }
+            #mobileControls {
+                display: flex;
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                justify-content: space-between;
+            }
+            .controlBtn {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+                background: rgba(0,0,0,0.7);
+            }
+            #message {
+                font-size: 8px;
+                bottom: 80px;
+            }
+            #overlay p {
+                font-size: 8px;
+            }
+            #overlay .start-btn {
+                padding: 12px 30px;
+                font-size: 12px;
+            }
+            #overlay h1 {
+                font-size: 20px;
+            }
+        }
+        @media (orientation: landscape) and (max-height: 500px) {
+            canvas {
+                height: 75vh;
+                max-height: 75vh;
+            }
+            .controlBtn {
+                width: 50px;
+                height: 50px;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
-        <div id="ui">
-            <div>Уровень: <span id="levelDisplay">1</span></div>
+<div id="ui">
+            <div>Уровень: <span id="levelDisplay">1</span>/20 <span id="levelName"></span></div>
             <div>Монеты: <span id="coinsDisplay">0</span></div>
             <div>Очки: <span id="scoreDisplay">0</span></div>
             <div>Жизни: <span id="livesDisplay">3</span></div>
+        </div>
+        <div id="mobileControls">
+            <button id="leftBtn" class="controlBtn">←</button>
+            <button id="rightBtn" class="controlBtn">→</button>
+            <button id="jumpBtn" class="controlBtn">↑</button>
+            <button id="interactBtn" class="controlBtn">E</button>
         </div>
         <div id="message">Найди выход!</div>
         <div id="overlay">
             <h1>ADVENTURE QUEST</h1>
             <p>Управление:</p>
-            <p>← → или A D - движение</p>
-            <p>ПРОБЕЛ или W - прыжок</p>
-            <p>E - взаимодействие с NPC</p>
+            <p>Компьютер: ← → или A D - движение, ПРОБЕЛ или W - прыжок, E - взаимодействие</p>
+            <p>Мобильные: используйте кнопки на экране</p>
             <p>Пробеги все уровни и найди выход!</p>
             <button class="start-btn" onclick="startGame()">ИГРАТЬ</button>
         </div>
@@ -159,7 +255,15 @@ function loadImage(src) {
     });
 }
 
-async function preloadAssets() {
+async function isTouchDevice() {
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+}
+
+function preloadAssets() {
+    if (isTouchDevice()) {
+        document.getElementById('mobileControls').style.display = 'flex';
+    }
+    
     const loadPromises = [];
 
     for (let i = 0; i <= 7; i++) {
@@ -198,6 +302,7 @@ async function preloadAssets() {
     loadPromises.push(loadImage('7level.jpg').then(img => { if (img) bgImages[7] = img; }));
 
     await Promise.all(loadPromises);
+    setupMobileControls();
 }
 
 // ==================== LEVELS ====================
@@ -530,6 +635,136 @@ const levels = {
             { x: 4600, y: 348, name: 'Владыка Теней', dialog: 'Амулет теней украден и разделён на части. Найди все фрагменты во тьме!' },
         ],
         exitX: 5200, exitY: 350, startX: 80, startY: 380
+    },
+    8: {
+        name: 'Забытое кладбище', bg: 3, groundY: 420,
+        groundTiles: generateGroundTiles(2500),
+        platforms: generatePlatforms(2500),
+        enemies: generateEnemies(2500),
+        coins: generateCoins(2500),
+        artifact: { x: 1800, y: 150, collected: false },
+        npc: { x: 2100, y: 348, name: 'Призрачный Страж', dialog: 'В могилах покоятся души. Найди Священный Крест и освободи их!' },
+        exitX: 2400, exitY: 350, startX: 80, startY: 380
+    },
+    9: {
+        name: 'Шахта Драгоценностей', bg: 2, groundY: 420,
+        groundTiles: generateGroundTiles(2600),
+        platforms: generatePlatforms(2600),
+        enemies: generateEnemies(2600),
+        coins: generateCoins(2600),
+        artifact: { x: 2000, y: 150, collected: false },
+        npc: { x: 2200, y: 348, name: 'Главный Шахтёр', dialog: 'Алмазы в глубине! Найди хоть один и вернёшься героем!' },
+        exitX: 2500, exitY: 350, startX: 80, startY: 380
+    },
+    10: {
+        name: 'Саванна', bg: 3, groundY: 420,
+        groundTiles: generateGroundTiles(2700),
+        platforms: generatePlatforms(2700),
+        enemies: generateEnemies(2700),
+        coins: generateCoins(2700),
+        artifact: { x: 2200, y: 150, collected: false },
+        npc: { x: 2300, y: 348, name: 'Вождь Племени', dialog: 'Найди Тотем Предков в центре саванны!' },
+        exitX: 2600, exitY: 350, startX: 80, startY: 380
+    },
+    11: {
+        name: 'Башня Мага', bg: 4, groundY: 420,
+        groundTiles: generateGroundTiles(2000),
+        platforms: generatePlatforms(2000, true),
+        enemies: generateEnemies(2000),
+        coins: generateCoins(2000),
+        artifact: { x: 1000, y: 100, collected: false },
+        npc: { x: 1600, y: 348, name: 'Верховный Маг', dialog: 'Поднимись на вершину башни и найди Книгу Заклинаний!' },
+        exitX: 1900, exitY: 350, startX: 80, startY: 380
+    },
+    12: {
+        name: 'Лес Призраков', bg: 3, groundY: 420,
+        groundTiles: generateGroundTiles(2800),
+        platforms: generatePlatforms(2800),
+        enemies: generateEnemies(2800),
+        coins: generateCoins(2800),
+        artifact: { x: 2400, y: 150, collected: false },
+        npc: { x: 2500, y: 348, name: 'Хранитель Леса', dialog: 'Древний дух покоится в глубине. Принеси ему мир!' },
+        exitX: 2700, exitY: 350, startX: 80, startY: 380
+    },
+    13: {
+        name: 'Подводный Дворец', bg: 5, groundY: 420,
+        groundTiles: generateGroundTiles(2900),
+        platforms: generatePlatforms(2900),
+        enemies: generateEnemies(2900),
+        coins: generateCoins(2900),
+        artifact: { x: 2500, y: 150, collected: false },
+        npc: { x: 2600, y: 348, name: 'Русалка Царица', dialog: 'Моя корона потерялась в глубинах. Найди её!' },
+        exitX: 2800, exitY: 350, startX: 80, startY: 380
+    },
+    14: {
+        name: 'Вулканическая Пещера', bg: 4, groundY: 420,
+        groundTiles: generateGroundTiles(3000),
+        platforms: generatePlatforms(3000),
+        enemies: generateEnemies(3000),
+        coins: generateCoins(3000),
+        artifact: { x: 2600, y: 150, collected: false },
+        npc: { x: 2700, y: 348, name: 'Огненный Дракон', dialog: 'Сердце вулкана остыло. Найди Огненный Камень!' },
+        exitX: 2900, exitY: 350, startX: 80, startY: 380
+    },
+    15: {
+        name: 'Небесный Храм', bg: 3, groundY: 420,
+        groundTiles: generateGroundTiles(3100),
+        platforms: generatePlatforms(3100),
+        enemies: generateEnemies(3100),
+        coins: generateCoins(3100),
+        artifact: { x: 2700, y: 150, collected: false },
+        npc: { x: 2800, y: 348, name: 'Архангел', dialog: 'Священный Грааль находится на небесах!' },
+        exitX: 3000, exitY: 350, startX: 80, startY: 380
+    },
+    16: {
+        name: 'Лабиринт Минотавра', bg: 2, groundY: 420,
+        groundTiles: generateGroundTiles(3200),
+        platforms: generatePlatforms(3200),
+        enemies: generateEnemies(3200),
+        coins: generateCoins(3200),
+        artifact: { x: 2800, y: 150, collected: false },
+        npc: { x: 2900, y: 348, name: 'Минотавр', dialog: 'Найди золотое руно в центре лабиринта!' },
+        exitX: 3100, exitY: 350, startX: 80, startY: 380
+    },
+    17: {
+        name: 'Долина Драконов', bg: 3, groundY: 420,
+        groundTiles: generateGroundTiles(3300),
+        platforms: generatePlatforms(3300),
+        enemies: generateEnemies(3300),
+        coins: generateCoins(3300),
+        artifact: { x: 2900, y: 150, collected: false },
+        npc: { x: 3000, y: 348, name: 'Дракон', dialog: 'Мое яйцо украдено! Найди его в долине!' },
+        exitX: 3200, exitY: 350, startX: 80, startY: 380
+    },
+    18: {
+        name: 'Снежная Пустошь', bg: 6, groundY: 420,
+        groundTiles: generateGroundTiles(3400),
+        platforms: generatePlatforms(3400),
+        enemies: generateEnemies(3400),
+        coins: generateCoins(3400),
+        artifact: { x: 3000, y: 150, collected: false },
+        npc: { x: 3100, y: 348, name: 'Снежная Королева', dialog: 'Найди Ледяное Сердце в снегах!' },
+        exitX: 3300, exitY: 350, startX: 80, startY: 380
+    },
+    19: {
+        name: 'Запретная Зона', bg: 4, groundY: 420,
+        groundTiles: generateGroundTiles(3500),
+        platforms: generatePlatforms(3500),
+        enemies: generateEnemies(3500),
+        coins: generateCoins(3500),
+        artifact: { x: 3100, y: 150, collected: false },
+        npc: { x: 3200, y: 348, name: 'Страж', dialog: 'Секретные документы пропали! Найди их!' },
+        exitX: 3400, exitY: 350, startX: 80, startY: 380
+    },
+    20: {
+        name: 'Финальная Би', bg: 7, groundY: 420,
+        groundTiles: generateGroundTiles(3600),
+        platforms: generatePlatforms(3600),
+        enemies: generateEnemies(3600),
+        coins: generateCoins(3600),
+        artifact: { x: 3200, y: 150, collected: false },
+        npc: { x: 3300, y: 348, name: 'Властелин', dialog: 'Ты дошёл! Финальный артефакт - Ключ к Освобождению!' },
+        exitX: 3500, exitY: 350, startX: 80, startY: 380
     }
 };
 
@@ -550,12 +785,12 @@ function generateGroundTiles(maxX) {
     return tiles;
 }
 
-function generatePlatforms(maxX) {
+function generatePlatforms(maxX, vertical = false) {
     const platforms = [];
-    for (let x = 200; x < maxX - 200; x += 350) {
+    for (let x = 200; x < maxX - 200; x += vertical ? 250 : 350) {
         platforms.push({ 
             x, 
-            y: 280 + Math.random() * 100, 
+            y: vertical ? 150 + Math.random() * 200 : 280 + Math.random() * 100, 
             w: 80 + Math.random() * 40, 
             h: 20 
         });
@@ -600,49 +835,130 @@ let artifacts = [];
 let npcs = [];
 let collectedArtifacts = [];
 
-// ==================== LOAD LEVEL ====================
-function loadLevel(levelNum) {
-    const level = levels[levelNum];
-    if (!level) { gameComplete(); return; }
+keyEPressed = false;
 
-    currentLevel = level;
-    gameState.level = levelNum;
-    const groundY = level.groundY;
+// Mobile controls
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
+const jumpBtn = document.getElementById('jumpBtn');
+const interactBtn = document.getElementById('interactBtn');
 
-    player.x = level.startX;
-    player.y = groundY - player.height;
-    player.vx = 0; player.vy = 0;
-    player.onGround = true;
-    player.invincible = 0;
+function setupMobileControls() {
+    const handleTouch = (elem, keyMap) => {
+        elem.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            for (const k of keyMap) keys[k] = true;
+        }, { passive: false });
+        elem.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            for (const k of keyMap) keys[k] = false;
+        }, { passive: false });
+        elem.addEventListener('touchcancel', (e) => {
+            for (const k of keyMap) keys[k] = false;
+        }, { passive: false });
+    };
+    handleTouch(leftBtn, ['ArrowLeft', 'a', 'A']);
+    handleTouch(rightBtn, ['ArrowRight', 'd', 'D']);
+    handleTouch(jumpBtn, [' ', 'w', 'W', 'ArrowUp']);
 
-    platforms = [...level.platforms];
-
-    enemies = level.enemies.map(e => ({
-        x: e.x, y: groundY - 32,
-        type: e.type,
-        vx: e.type === 'ghost' ? 0 : (Math.random() > 0.5 ? 1.5 : -1.5),
-        width: 32, height: 32,
-        animFrame: 0,
-        active: true,
-        originX: e.x,
-        patrolRange: 80
-    }));
-
-    coins = level.coins.map(c => ({
-        x: c.x, y: c.y,
-        width: 24, height: 24,
-        animFrame: 0, collected: false
-    }));
-
-    artifact = level.artifact ? { ...level.artifact, collected: false, animFrame: 0, width: 32, height: 32 } : null;
-    hasArtifact = false;
-    npc = level.npc ? { ...level.npc, width: 32, height: 40, hasQuest: true } : null;
-    
-    if (levelNum === 7 && level.artifacts) {
-        artifacts = level.artifacts.map(a => ({ ...a, animFrame: 0, width: 32, height: 32 }));
-        npcs = level.npcs.map(n => ({ ...n, width: 32, height: 40, hasQuest: true }));
-        collectedArtifacts = [];
+    interactBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        keyEPressed = true;
+    }, { passive: false });
+    interactBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         keyEPressed = false;
+    }, { passive: false });
+
+    canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+}
+
+document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+function loadLevel(levelNum) {
+    currentLevel = levels[levelNum];
+    
+    if (!currentLevel || levelNum > 20) {
+        gameComplete();
+        return;
+    }
+    
+    player.x = currentLevel.startX;
+    player.y = currentLevel.startY;
+    player.vx = 0;
+    player.vy = 0;
+    player.onGround = true;
+    player.invincible = 120;
+    
+    // Reset and setup enemies
+    enemies = currentLevel.enemies.map(e => ({
+        ...e,
+        originX: e.x,
+        originY: e.y,
+        patrolRange: 80,
+        vx: e.type === 'ghost' ? 0 : (Math.random() > 0.5 ? 2 : -2),
+        width: 32,
+        height: 32,
+        animFrame: Math.random() * Math.PI * 2,
+        active: true
+    }));
+    
+    // Reset and setup coins
+    coins = currentLevel.coins.map(c => ({
+        ...c,
+        width: 24,
+        height: 24,
+        animFrame: Math.random() * Math.PI * 2,
+        collected: false
+    }));
+    
+    // Setup platforms
+    platforms = currentLevel.platforms || [];
+    
+    // Setup artifact (single artifact for levels 1-6)
+    if (currentLevel.artifact) {
+        artifact = {
+            ...currentLevel.artifact,
+            width: 32,
+            height: 32,
+            animFrame: 0
+        };
+        hasArtifact = false;
+    } else {
+        artifact = null;
+    }
+    
+    // Setup NPC (single NPC for levels 1-6)
+    if (currentLevel.npc) {
+        npc = {
+            ...currentLevel.npc,
+            hasQuest: true
+        };
+    } else {
+        npc = null;
+    }
+    
+    // Setup multiple artifacts and NPCs for level 7
+    if (levelNum === 7) {
+        if (currentLevel.artifacts) {
+            artifacts = currentLevel.artifacts.map(a => ({
+                ...a,
+                width: 32,
+                height: 32,
+                animFrame: Math.random() * Math.PI * 2,
+                collected: false
+            }));
+        }
+        if (currentLevel.npcs) {
+            npcs = currentLevel.npcs.map(n => ({
+                ...n,
+                hasQuest: true
+            }));
+        }
     } else {
         artifacts = [];
         npcs = [];
@@ -659,6 +975,10 @@ function updateUI() {
     document.getElementById('coinsDisplay').textContent = gameState.coins;
     document.getElementById('scoreDisplay').textContent = gameState.score;
     document.getElementById('livesDisplay').textContent = gameState.lives;
+    if (currentLevel && currentLevel.name) {
+        document.getElementById('levelName').textContent = currentLevel.name;
+        document.getElementById('levelName').style.cssText = 'color:#ffd700;font-size:10px;background:rgba(0,0,0,0.6);padding:4px 8px;border-radius:4px;border:2px solid #ffd700;';
+    }
 }
 
 // ==================== UPDATE ====================
@@ -860,9 +1180,9 @@ function update() {
     if (player.invincible > 0) player.invincible--;
 
     let maxCameraX = 2500 - canvas.width;
-    if (gameState.level === 7) {
-        maxCameraX = 5200 - canvas.width;
-    }
+    if (gameState.level === 7) maxCameraX = 5200 - canvas.width;
+    if (gameState.level >= 8 && gameState.level <= 10) maxCameraX = (2400 + (gameState.level - 8) * 100) - canvas.width;
+    if (gameState.level >= 11 && gameState.level <= 20) maxCameraX = (1800 + (gameState.level - 11) * 200) - canvas.width;
     cameraX = Math.max(0, Math.min(maxCameraX, player.x - canvas.width / 3));
 
     updateUI();
@@ -900,7 +1220,7 @@ function gameComplete() {
     const overlay = document.getElementById('overlay');
     overlay.innerHTML = `
         <h1>ПОБЕДА!</h1>
-        <p>Вы прошли все уровни!</p>
+        <p>Вы прошли все 20 уровней!</p>
         <p>Счёт: ${gameState.score}</p>
         <p>Монеты: ${gameState.coins}</p>
         <button class="start-btn" onclick="startGame()">ИГРАТЬ СНОВА</button>
@@ -916,13 +1236,14 @@ function render() {
     if (bg) {
         ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
     } else {
+        const bgNum = currentLevel.bg || 1;
         ctx.fillStyle = '#87CEEB';
-        if (currentLevel.bg === 2) ctx.fillStyle = '#1a0a00';
-        if (currentLevel.bg === 3) ctx.fillStyle = '#2a1a4a';
-        if (currentLevel.bg === 4) ctx.fillStyle = '#2a1a1a';
-        if (currentLevel.bg === 5) ctx.fillStyle = '#2F4F4F';
-        if (currentLevel.bg === 6) ctx.fillStyle = '#B0E0E6';
-        if (currentLevel.bg === 7) ctx.fillStyle = '#1a1a2e';
+        if (bgNum === 2) ctx.fillStyle = '#1a0a00';
+        if (bgNum === 3) ctx.fillStyle = '#2a1a4a';
+        if (bgNum === 4) ctx.fillStyle = '#2a1a1a';
+        if (bgNum === 5) ctx.fillStyle = '#2F4F4F';
+        if (bgNum === 6) ctx.fillStyle = '#B0E0E6';
+        if (bgNum >= 7) ctx.fillStyle = '#1a1a2e';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
@@ -1257,6 +1578,10 @@ function showMessage(text) {
 }
 
 gameLoop();
+    
+    if (isTouchDevice()) {
+        document.body.classList.add('mobile');
+    }
     </script>
 </body>
 </html>
