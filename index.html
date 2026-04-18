@@ -347,7 +347,10 @@ function initMobileControls() {
     setupMobileControls();
 }
 
-initMobileControls();
+document.addEventListener('DOMContentLoaded', () => {
+    initMobileControls();
+    resizeCanvas();
+});
 
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('orientationchange', () => {
@@ -974,15 +977,17 @@ document.addEventListener('touchend', (e) => {
     lastTouchEnd = now;
 }, { passive: false });
 
-const startBtn = document.getElementById('startBtn');
-if (startBtn) {
-    startBtn.addEventListener('click', () => startGame());
-    startBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        startGame();
-    }, { passive: false });
-}
+document.addEventListener('DOMContentLoaded', () => {
+    const startBtn = document.getElementById('startBtn');
+    if (startBtn) {
+        startBtn.addEventListener('click', () => startGame());
+        startBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startGame();
+        }, { passive: false });
+    }
+});
 
 function loadLevel(levelNum) {
     currentLevel = levels[levelNum];
