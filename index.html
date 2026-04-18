@@ -210,7 +210,7 @@
             <p>Компьютер: ← → или A D - движение, ПРОБЕЛ или W - прыжок, E - взаимодействие</p>
             <p>Мобильные: используйте кнопки на экране</p>
             <p>Пробеги все уровни и найди выход!</p>
-            <button class="start-btn" onclick="startGame()">ИГРАТЬ</button>
+            <button class="start-btn" id="startBtn">ИГРАТЬ</button>
         </div>
     </div>
 
@@ -260,8 +260,11 @@ async function isTouchDevice() {
 }
 
 function preloadAssets() {
-    if (isTouchDevice()) {
-        document.getElementById('mobileControls').style.display = 'flex';
+    const mobileControls = document.getElementById('mobileControls');
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+    if (isTouch) {
+        mobileControls.style.display = 'flex';
+        document.body.classList.add('mobile');
     }
     
     const loadPromises = [];
@@ -302,8 +305,19 @@ function preloadAssets() {
     loadPromises.push(loadImage('7level.jpg').then(img => { if (img) bgImages[7] = img; }));
 
     await Promise.all(loadPromises);
+}
+
+function initMobileControls() {
+    const mobileControls = document.getElementById('mobileControls');
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+    if (isTouch) {
+        mobileControls.style.display = 'flex';
+        document.body.classList.add('mobile');
+    }
     setupMobileControls();
 }
+
+initMobileControls();
 
 // ==================== LEVELS ====================
 const levels = {
@@ -856,28 +870,67 @@ function setupMobileControls() {
             for (const k of keyMap) keys[k] = false;
         }, { passive: false });
         elem.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
             for (const k of keyMap) keys[k] = false;
         }, { passive: false });
+        elem.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            for (const k of keyMap) keys[k] = true;
+        });
+        elem.addEventListener('mouseup', (e) => {
+            for (const k of keyMap) keys[k] = false;
+        });
+        elem.addEventListener('mouseleave', (e) => {
+            for (const k of keyMap) keys[k] = false;
+        });
     };
     handleTouch(leftBtn, ['ArrowLeft', 'a', 'A']);
     handleTouch(rightBtn, ['ArrowRight', 'd', 'D']);
     handleTouch(jumpBtn, [' ', 'w', 'W', 'ArrowUp']);
 
-    interactBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        keyEPressed = true;
-    }, { passive: false });
-    interactBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        keyEPressed = false;
-    }, { passive: false });
+    const handleInteractTouch = (elem) => {
+        elem.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            keyEPressed = true;
+        }, { passive: false });
+        elem.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            keyEPressed = false;
+        }, { passive: false });
+        elem.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            keyEPressed = false;
+        }, { passive: false });
+        elem.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            keyEPressed = true;
+        });
+        elem.addEventListener('mouseup', (e) => {
+            keyEPressed = false;
+        });
+        elem.addEventListener('mouseleave', (e) => {
+            keyEPressed = false;
+        });
+    };
+
+    handleInteractTouch(interactBtn);
 
     canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 }
 
 document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+const startBtn = document.getElementById('startBtn');
+if (startBtn) {
+    startBtn.addEventListener('click', () => startGame());
+    startBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startGame();
+    }, { passive: false });
+}
 
 function loadLevel(levelNum) {
     currentLevel = levels[levelNum];
