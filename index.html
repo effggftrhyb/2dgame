@@ -219,11 +219,60 @@
                 padding-bottom: 8px;
             }
         }
+        #rotateMessage {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: #fff;
+            text-align: center;
+            padding: 24px;
+        }
+        #rotateMessage h2 {
+            font-size: 24px;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+        #rotateMessage p {
+            font-size: 14px;
+            color: #87ceeb;
+        }
+        @media (orientation: portrait) and (max-width: 768px) {
+            #rotateMessage {
+                display: flex;
+            }
+        }
+        #fullscreenBtn {
+            position: absolute;
+            top: var(--safe-top);
+            right: var(--safe-top);
+            background: rgba(0,0,0,0.6);
+            color: #ffd700;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            cursor: pointer;
+            z-index: 50;
+            touch-action: manipulation;
+        }
+        #fullscreenBtn:hover {
+            background: rgba(255,215,0,0.2);
+        }
+        #fullscreenBtn:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
+        <button id="fullscreenBtn">⛶</button>
         <div id="ui">
             <div>Уровень: <span id="levelDisplay">1</span>/20 <span id="levelName"></span></div>
             <div>Монеты: <span id="coinsDisplay">0</span></div>
@@ -241,6 +290,10 @@
             </div>
         </div>
         <div id="message">Найди выход!</div>
+        <div id="rotateMessage">
+            <h2>📱 Поверните устройство</h2>
+            <p>Для лучшей игры поверните телефон горизонтально</p>
+        </div>
         <div id="overlay">
             <h1>ADVENTURE QUEST</h1>
             <p>Управление:</p>
@@ -987,7 +1040,19 @@ document.addEventListener('DOMContentLoaded', () => {
             startGame();
         }, { passive: false });
     }
+    
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        fullscreenBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            toggleFullscreen();
+        }, { passive: false });
+    }
 });
+
+document.addEventListener('fullscreenchange', resizeCanvas);
+document.addEventListener('webkitfullscreenchange', resizeCanvas);
 
 function loadLevel(levelNum) {
     currentLevel = levels[levelNum];
@@ -1155,8 +1220,9 @@ function update() {
         if (hasActiveQuest) {
             showMessage('Сначала выполни задания всех NPC!');
         } else {
+            gameState.level++;
             gameState.score += 100;
-            loadLevel(gameState.level + 1);
+            loadLevel(gameState.level);
             return;
         }
     }
@@ -1652,8 +1718,14 @@ function gameLoop() {
 function resizeCanvas() {
     const container = document.getElementById('gameContainer');
     const isMobile = isTouchDevice();
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
     
-    if (isMobile) {
+    if (isFullscreen) {
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    } else if (isMobile) {
         const scale = Math.min(window.innerWidth / 800, window.innerHeight / 500);
         const newWidth = Math.floor(800 * scale);
         const newHeight = Math.floor(500 * scale);
@@ -1665,6 +1737,23 @@ function resizeCanvas() {
     } else {
         canvas.style.width = '100%';
         canvas.style.height = '100%';
+    }
+}
+
+function toggleFullscreen() {
+    const elem = document.documentElement;
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
     }
 }
 
